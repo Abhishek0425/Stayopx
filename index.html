@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Uniliv - Dashboard Panel</title>
+
+<!-- Bootstrap -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- Custom CSS -->
+<link rel="stylesheet" href="./styles/style.css">
+
+<!-- Chart JS -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+<!-- ===== NAVBAR ===== -->
+<nav class="navbar navbar-expand-lg fixed-top shadow-sm custom-navbar">
+  <div class="container-fluid">
+    <button class="btn btn-outline-light d-lg-none me-2" onclick="toggleSidebar()">☰</button>
+    <div class="d-flex align-items-center gap-2">
+      <div class="logo">
+  <img src="./Assests/Image/uniliv_LOGO-removebg-preview.png" alt="Brand Logo">
+</div>
+      <span class="navbar-brand-text">UNILIV</span>
+    </div>
+    <button class="btn btn-sm btn-outline-light ms-auto" onclick="toggleDarkMode()">🌙</button>
+  </div>
+</nav>
+
+<!-- ===== MAIN LAYOUT ===== -->
+<div class="d-flex main-wrapper">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar">
+    <button class="tab-btn active" onclick="switchTab(event,'organogramTab')">
+      📊 Organogram Dashboard
+    </button>
+    <button class="tab-btn" onclick="switchTab(event,'foodMenuTab')">
+      🥗 Food Analysis Dashboard
+    </button>
+  </div>
+
+  <!-- CONTENT AREA -->
+  <div class="content-area">
+
+    <!-- ===================================================
+         TAB 1 — ORGANOGRAM DASHBOARD
+    ==================================================== -->
+    <div id="organogramTab" class="dashboard-content active">
+
+      <!-- WELCOME -->
+      <div id="welcomeScreen" class="welcome-screen">
+        <div class="text-center">
+          <div class="logo">
+  <img src="./Assests/Image/uniliv_LOGO-removebg-preview.png" alt="Brand Logo">
+</div>
+          <h1 style="color:#fff;font-weight:700;">Welcome to UNILIV</h1>
+          <p style="color:#a0aec0;">Property Cost Intelligence Tool</p>
+          <button class="btn btn-danger mt-3" onclick="dismissWelcome()">Get Started →</button>
+        </div>
+      </div>
+
+      <!-- LOADER -->
+      <div id="loader" class="loader-overlay">
+        <div class="spinner-border text-light mb-3"></div>
+        <p class="text-white">Analyzing Property Data…</p>
+      </div>
+
+       <div class="container-fluid px-4 py-4">
+
+        <!-- INPUT CARD -->
+    <div class="glass-card p-4 mb-4 shadow-lg" style="border-radius:20px;">
+
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+      <h3 class="mb-1 fw-bold text-dark">🏢 Property Cost Analysis</h3>
+      <p class="text-muted mb-0" style="font-size:13px;">
+        Enter property details to generate cost insights
+      </p>
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- BRAND -->
+    <div class="col-lg-3 col-md-6">
+      <div class="input-card">
+        <label>Select Brand</label>
+        <select id="brandSelect" onchange="switchBrand()">
+          <option value="uniliv">🟠 UNILIV</option>
+          <option value="huddle">🔵 HUDDLE</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- BEDS -->
+    <div class="col-lg-3 col-md-6">
+      <div class="input-card">
+        <label>Total Beds</label>
+        <input type="number" id="bedsInput" placeholder="e.g. 120">
+      </div>
+    </div>
+
+    <!-- ROOMS -->
+    <div class="col-lg-3 col-md-6">
+      <div class="input-card">
+        <label>Total Rooms</label>
+        <input type="number" id="roomsInput" placeholder="e.g. 60">
+      </div>
+    </div>
+
+    <!-- AREA -->
+    <div class="col-lg-3 col-md-6">
+      <div class="input-card">
+        <label>Total Area (Sq Ft)</label>
+        <input type="number" id="areaInput" placeholder="e.g. 15000">
+      </div>
+    </div>
+
+    <!-- ENTRIES -->
+    <div class="col-lg-3 col-md-6">
+      <div class="input-card">
+        <label>Entries</label>
+        <input type="number" id="entriesInput" placeholder="e.g. 2">
+      </div>
+    </div>
+
+    <!-- PROPERTIES -->
+    <div class="col-lg-3 col-md-6">
+      <div class="input-card">
+        <label>Properties</label>
+        <input type="number" id="propertiesInput" placeholder="e.g. 3">
+      </div>
+    </div>
+
+    <!-- FOOD TOGGLE -->
+    <div class="col-lg-6 d-flex align-items-center">
+      <div class="form-check form-switch mt-3">
+        <input class="form-check-input" type="checkbox" id="foodToggle" checked>
+        <label class="form-check-label fw-semibold ms-2">
+          Include Food Services
+        </label>
+      </div>
+    </div>
+
+    <!-- BUTTON -->
+    <div class="col-12">
+      <button class="generate-btn w-100" onclick="generateCostBreakdown()">
+        🚀 Generate Cost Analysis
+      </button>
+    </div>
+
+  </div>
+</div>
+
+        <!-- OUTPUT -->
+        <div id="output" class="mt-4"></div>
+      </div>
+
+      <footer class="text-center py-4 text-muted small">© 2026 UNILIV – Property Cost Intelligence</footer>
+    </div>
+
+    <!-- ===================================================
+         TAB 2 — FOOD MENU DASHBOARD
+    ==================================================== -->
+    <div id="foodMenuTab" class="dashboard-content">
+      <div id="foodMenuDash">
+
+        <!-- Top bar -->
+        <div class="fmd-topbar">
+          <div class="fmd-brand">
+            <div class="fmd-brand-icon">
+              <svg viewBox="0 0 24 24"><path d="M12 2C6 8 4 12 4 15a8 8 0 0 0 16 0c0-3-2-7-8-13z"/><path d="M12 2v20"/></svg>
+            </div>
+            <div>
+              <div class="fmd-brand-name">🌿 Veg Menu Dashboard</div>
+              <div class="fmd-brand-sub">100% vegetarian recipe collection</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="fmd-btn fmd-btn-danger" onclick="fmdClearAll()">Clear all</button>
+            <button class="fmd-btn fmd-btn-primary" onclick="fmdLoadSamples()">Load samples</button>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="fmd-stats">
+          <div class="fmd-stat">
+            <div class="fmd-stat-label">Veg dishes</div>
+            <div class="fmd-stat-val green" id="fmd-st-total">0</div>
+          </div>
+          <div class="fmd-stat">
+            <div class="fmd-stat-label">Ingredients</div>
+            <div class="fmd-stat-val" id="fmd-st-ing">0</div>
+          </div>
+          <div class="fmd-stat">
+            <div class="fmd-stat-label">Top category</div>
+            <div class="fmd-stat-val sm" id="fmd-st-top">—</div>
+          </div>
+          <div class="fmd-stat">
+            <div class="fmd-stat-label">Last added</div>
+            <div class="fmd-stat-val sm" id="fmd-st-last">—</div>
+          </div>
+        </div>
+
+        <!-- Two-column layout -->
+        <div class="fmd-layout">
+
+          <!-- Left: Form + Chart -->
+          <div>
+            <div class="fmd-panel">
+              <div class="fmd-panel-title" id="fmd-form-title">Add a vegetarian dish</div>
+              <div class="fmd-veg-badge">
+                <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+                Vegetarian only
+              </div>
+              <div class="fmd-field-row">
+                <div class="fmd-field">
+                  <label class="fmd-label">Dish name</label>
+                  <input type="text" class="fmd-input" id="fmd-inp-name" placeholder="e.g. Palak Paneer">
+                </div>
+                <div class="fmd-field">
+                  <label class="fmd-label">Category</label>
+                  <select class="fmd-input" id="fmd-inp-cat">
+                    <option value="">Choose…</option>
+                    <option>Breakfast</option>
+                    <option>Lunch</option>
+                    <option>Snacks</option>
+                    <option>Dinner</option>
+                  </select>
+                </div>
+              </div>
+              <div class="fmd-field">
+                <label class="fmd-label">Ingredients <span style="font-weight:400;opacity:.6">(comma separated)</span></label>
+                <textarea class="fmd-input" id="fmd-inp-ing"
+                  placeholder="e.g. spinach, paneer, onion, tomato, spices"
+                  oninput="fmdCheckNonVeg('fmd-nv-warn','fmd-inp-ing')"></textarea>
+                <div class="fmd-warn-box" id="fmd-nv-warn">⚠️ Non-vegetarian ingredient detected! Only veg dishes allowed.</div>
+              </div>
+              <div class="fmd-form-btns">
+                <button class="fmd-btn fmd-btn-primary" id="fmd-btn-submit" onclick="fmdSubmit()">+ Add Dish</button>
+                <button class="fmd-btn" onclick="fmdCancelEdit()">Clear</button>
+              </div>
+              <div class="fmd-toast" id="fmd-toast"></div>
+            </div>
+
+            <div class="fmd-panel">
+              <div class="fmd-panel-title">By category</div>
+              <div id="fmd-chart"></div>
+            </div>
+          </div>
+
+          <!-- Right: Collection -->
+          <div>
+            <div class="fmd-panel">
+              <div class="fmd-panel-title">Collection</div>
+              <div class="fmd-toolbar">
+                <input type="text" class="fmd-input" id="fmd-search"
+                  placeholder="🔍 Search by dish or ingredient…" oninput="fmdRender()">
+              </div>
+              <div class="fmd-chips">
+                <div class="fmd-chip active" data-f="All"       onclick="fmdSetFilter(this)">All</div>
+                <div class="fmd-chip"        data-f="Breakfast" onclick="fmdSetFilter(this)">Breakfast</div>
+                <div class="fmd-chip"        data-f="Lunch"     onclick="fmdSetFilter(this)">Lunch</div>
+                <div class="fmd-chip"        data-f="Snacks"    onclick="fmdSetFilter(this)">Snacks</div>
+                <div class="fmd-chip"        data-f="Dinner"    onclick="fmdSetFilter(this)">Dinner</div>
+              </div>
+              <div class="fmd-sort-row">
+                <label class="fmd-label">Sort:</label>
+                <select class="fmd-input" id="fmd-sort" onchange="fmdRender()">
+                  <option value="newest">Newest first</option>
+                  <option value="oldest">Oldest first</option>
+                  <option value="az">A → Z</option>
+                  <option value="za">Z → A</option>
+                </select>
+              </div>
+              <div class="fmd-cards-grid" id="fmd-cards"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer class="text-center py-4 text-muted small">© 2026 UNILIV – Food Menu Intelligence</footer>
+    </div>
+
+  </div><!-- /content-area -->
+</div><!-- /main-wrapper -->
+
+<!-- ===== FOOD MENU EDIT MODAL ===== -->
+<div class="fmd-modal-overlay" id="fmd-modal-overlay">
+  <div class="fmd-modal">
+    <div class="fmd-modal-title" id="fmd-modal-title">Edit dish</div>
+    <div class="fmd-field-row">
+      <div class="fmd-field"><label class="fmd-label">Name</label><input type="text" class="fmd-input" id="fmd-m-name"></div>
+      <div class="fmd-field">
+        <label class="fmd-label">Category</label>
+        <select class="fmd-input" id="fmd-m-cat">
+          <option>Breakfast</option><option>Lunch</option>
+          <option>Snacks</option><option>Dinner</option>
+        </select>
+      </div>
+    </div>
+    <div class="fmd-field">
+      <label class="fmd-label">Ingredients</label>
+      <textarea class="fmd-input" id="fmd-m-ing"
+        oninput="fmdCheckNonVeg('fmd-m-nv-warn','fmd-m-ing')"></textarea>
+      <div class="fmd-warn-box" id="fmd-m-nv-warn">⚠️ Non-vegetarian ingredient detected!</div>
+    </div>
+    <div class="fmd-modal-actions">
+      <button class="fmd-btn" onclick="fmdCloseModal()">Cancel</button>
+      <button class="fmd-btn fmd-btn-primary" onclick="fmdSaveEdit()">Save changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bootstrap -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Custom JS -->
+<script src="./scripts/script.js"></script>
+
+</body>
+</html>
