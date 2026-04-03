@@ -311,7 +311,7 @@ body.dark-mode #foodMenuDash {
   --fd-txt: #e8edd8; --fd-txt2: #9aab80; --fd-txt3: #5a6650;
 }
 
-#foodMenuDash { background: var(--fd-bg); padding: 1.5rem 1.25rem 3rem; }
+#foodMenuDash { background: var(--fd-bg); padding: 4rem 1.25rem 3rem; }
 
 .fmd-topbar {
   display: flex; align-items: center; justify-content: space-between;
