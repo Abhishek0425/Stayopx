@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Uniliv - Dashboard Panel</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<link rel="stylesheet" href="./styles/style.css">
+<link rel="stylesheet" href="./styles/menu_styles.css">
+
+<script>
+  window.UNILIV_API_BASE = 'http://127.0.0.1:8000';
+  function dismissWelcome() {
+    var ws = document.getElementById('welcomeScreen');
+    if (!ws) return;
+    ws.style.transition = 'opacity 0.4s ease';
+    ws.style.opacity = '0';
+    setTimeout(function() { ws.style.display = 'none'; }, 420);
+  }
+  window.addEventListener('DOMContentLoaded', function() { setTimeout(dismissWelcome, 2000); });
+  var _failedScripts = [];
+  function _onScriptError(f) {
+    _failedScripts.push(f);
+    var b = document.getElementById('_scriptErrorBanner');
+    if (!b) return;
+    b.style.display = 'block';
+    b.innerHTML = '⚠️ <strong>Script missing: ' + _failedScripts.join(', ') + '</strong> — Ensure files are in <code>scripts/</code>.';
+  }
+</script>
+</head>
+<body>
+
+<div id="_scriptErrorBanner" style="display:none;position:fixed;top:60px;left:0;right:0;z-index:9999;
+  background:#b91c1c;color:#fff;padding:12px 20px;font-size:13px;font-family:sans-serif;"></div>
+
+<!-- ===== NAVBAR ===== -->
+<nav class="navbar navbar-expand-lg fixed-top shadow-sm custom-navbar">
+  <div class="container-fluid">
+    <button class="btn btn-outline-light d-lg-none me-2" onclick="toggleSidebar()">☰</button>
+    <div class="d-flex align-items-center gap-2">
+      <div class="logo">
+        <img src="./Assets/Image/uniliv_LOGO-removebg-preview.png" alt="Brand Logo">
+      </div>
+      <span class="navbar-brand-text">UNILIV</span>
+    </div>
+    <button class="btn btn-sm btn-outline-light ms-auto" onclick="toggleDarkMode()">🌙</button>
+  </div>
+</nav>
+
+<div class="d-flex main-wrapper">
+
+  <!-- SIDEBAR — UNCHANGED -->
+  <div class="sidebar" id="sidebar">
+    <button class="tab-btn active" onclick="switchTab(event,'organogramTab')">
+      📊 Organogram Dashboard
+    </button>
+    <button class="tab-btn" onclick="switchTab(event,'foodMenuTab')">
+      🥗 Food Analysis Dashboard
+    </button>
+  </div>
+
+  <div class="content-area">
+
+    <!-- ==========================================================
+         TAB 1 — ORGANOGRAM DASHBOARD  (COMPLETELY UNCHANGED)
+    =========================================================== -->
+    <div id="organogramTab" class="dashboard-content active">
+
+      <div id="welcomeScreen" class="welcome-screen">
+        <div class="text-center">
+          <div class="logo">
+            <img src="./Assets/Image/uniliv_LOGO-removebg-preview.png" alt="Brand Logo">
+          </div>
+          <h1 style="color:#fff;font-weight:700;">Welcome to UNILIV</h1>
+          <p style="color:#a0aec0;">Property Cost Intelligence Tool</p>
+          <button class="btn btn-danger mt-3" onclick="dismissWelcome()">Get Started →</button>
+        </div>
+      </div>
+
+      <div id="loader" class="loader-overlay">
+        <div class="spinner-border text-light mb-3"></div>
+        <p class="text-white">Analyzing Property Data…</p>
+      </div>
+
+      <div class="container-fluid px-4 py-4">
+        <div class="glass-card p-4 mb-4 shadow-lg" style="border-radius:20px;">
+          <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+            <div>
+              <h3 class="mb-1 fw-bold text-dark">🏢 Property Cost Analysis</h3>
+              <p class="text-muted mb-0" style="font-size:13px;">Enter property details to generate cost insights</p>
+            </div>
+          </div>
+          <div class="row g-4">
+            <div class="col-lg-3 col-md-6"><div class="input-card"><label>Select Brand</label>
+              <select id="brandSelect" onchange="switchBrand()">
+                <option value="uniliv">🟠 UNILIV</option>
+                <option value="huddle">🔵 HUDDLE</option>
+              </select></div>
+            </div>
+            <div class="col-lg-3 col-md-6"><div class="input-card"><label>Total Beds</label>
+              <input type="number" id="bedsInput" placeholder="e.g. 120"></div>
+            </div>
+            <div class="col-lg-3 col-md-6"><div class="input-card"><label>Total Rooms</label>
+              <input type="number" id="roomsInput" placeholder="e.g. 60"></div>
+            </div>
+            <div class="col-lg-3 col-md-6"><div class="input-card"><label>Total Area (Sq Ft)</label>
+              <input type="number" id="areaInput" placeholder="e.g. 15000"></div>
+            </div>
+            <div class="col-lg-3 col-md-6"><div class="input-card"><label>No. of Entries</label>
+              <input type="number" id="entriesInput" placeholder="e.g. 2"></div>
+            </div>
+            <div class="col-lg-3 col-md-6"><div class="input-card"><label>Properties</label>
+              <input type="number" id="propertiesInput" placeholder="e.g. 3"></div>
+            </div>
+            <div class="col-lg-6 d-flex align-items-center">
+              <div class="form-check form-switch mt-3">
+                <input class="form-check-input" type="checkbox" id="foodToggle" checked>
+                <label class="form-check-label fw-semibold ms-2">Include Food Services</label>
+              </div>
+            </div>
+            <div class="col-12">
+              <button class="generate-btn w-100" onclick="generateCostBreakdown()">
+                🚀 Generate Cost Analysis
+              </button>
+            </div>
+          </div>
+        </div>
+        <div id="output" class="mt-4"></div>
+      </div>
+      <footer class="text-center py-4 text-muted small">© 2026 UNILIV – Property Cost Intelligence</footer>
+    </div>
+
+    <!-- ==========================================================
+         TAB 2 — FOOD ANALYSIS DASHBOARD
+    =========================================================== -->
+    <div id="foodMenuTab" class="dashboard-content">
+
+      <!-- ──────────────────────────────────────────────────────
+           UPDATED LOGIC: Sub-navigation — 3rd tab added
+      ────────────────────────────────────────────────────── -->
+      <div class="fmp-subnav">
+        <!-- NEW FEATURE: Intelligent 15-Day Planner tab -->
+        <button class="fmp-subnav-btn active" data-subtab="fmpManualPlannerTab"
+                onclick="fmpSwitchSubTab('fmpManualPlannerTab')">📋 Plan Your Menu</button>
+        <button class="fmp-subnav-btn" data-subtab="fmpPlannerTab"
+                onclick="fmpSwitchSubTab('fmpPlannerTab')">📅 Menu Planner</button>
+        <button class="fmp-subnav-btn" data-subtab="fmpCollectionTab"
+                onclick="fmpSwitchSubTab('fmpCollectionTab')">🥗 Dish Collector</button>
+        
+      </div>
+
+      <!-- ── SUB-TAB A: Auto 15-Day Menu Planner (UNCHANGED) ── -->
+      <div id="fmpPlannerTab" class="fmp-subtab-content">
+        <div id="fmpDash" data-brand="uniliv">
+          <div class="fmp-planner">
+
+            <div id="fmp-backend-status" style="
+              display:none;padding:50px 14px;border-radius:10px;margin-bottom:1rem;
+              background:#fef3c7;border:1px solid #fcd34d;color:#92400e;font-size:13px;">
+            </div>
+
+            <div class="fmp-controls-bar">
+              <div class="fmp-controls-title">
+                🍽️ 15-Day Menu Generator
+                <span>Django backend · 7 rules enforced · Excel data imported</span>
+              </div>
+              <select id="fmp-brand-sel" class="fmp-brand-sel" onchange="fmpSetBrand(this.value)">
+                <option value="uniliv">🟠 UNILIV — Premium</option>
+                <option value="huddle">🔵 HUDDLE — Affordable</option>
+              </select>
+              <button class="fmp-btn fmp-btn-primary" id="fmp-gen-btn"
+                      onclick="fmpGenerate()">✨ Generate 15-Day Menu</button>
+              <button class="fmp-btn fmp-btn-outline" onclick="fmpExportPDF()">📄 PDF</button>
+              <button class="fmp-btn fmp-btn-outline" onclick="fmpExportExcel()">📊 Excel</button>
+            </div>
+
+            <div class="fmp-stats-strip">
+              <div class="fmp-stat-pill">
+                <div class="fmp-stat-pill-label">Days Planned</div>
+                <div class="fmp-stat-pill-val" id="fmp-stat-days">—</div>
+              </div>
+              <div class="fmp-stat-pill">
+                <div class="fmp-stat-pill-label">Dishes in DB</div>
+                <div class="fmp-stat-pill-val" id="fmp-stat-dishes">—</div>
+              </div>
+              <div class="fmp-stat-pill">
+                <div class="fmp-stat-pill-label">Unique Dals</div>
+                <div class="fmp-stat-pill-val" id="fmp-stat-dals">—</div>
+              </div>
+              <div class="fmp-stat-pill">
+                <div class="fmp-stat-pill-label">Rule Issues</div>
+                <div class="fmp-stat-pill-val" id="fmp-stat-issues">0</div>
+              </div>
+            </div>
+
+            <div id="fmp-error-banner"  class="fmp-error-banner"></div>
+            <div id="fmp-validation"    class="fmp-validation-panel"></div>
+
+            <div class="fmp-section-panel" style="margin-bottom:1rem;">
+              <div class="fmp-section-title">📅 15-Day Menu Plan</div>
+              <div class="fmp-spinner-wrap" id="fmp-spinner">
+                <div class="fmp-spinner"></div>
+              </div>
+              <div class="fmp-weekly-grid-outer">
+                <div id="fmp-menu-grid"></div>
+              </div>
+            </div>
+
+            <div class="fmp-bottom-grid" id="fmp-bottom-grid" style="display:none;">
+              <div class="fmp-section-panel">
+                <div class="fmp-section-title">🥄 Dish Frequency</div>
+                <div id="fmp-ing-tracker"></div>
+              </div>
+              <div class="fmp-section-panel">
+                <div class="fmp-section-title">📋 Active Rules (Server-Enforced)</div>
+                <div class="fmp-rules-list">
+                  <div class="fmp-rule-item"><span class="fmp-rule-icon">🌿</span><span>Vegetarian only</span></div>
+                  <div class="fmp-rule-item"><span class="fmp-rule-icon">🫘</span><span>Dal mandatory every Lunch &amp; Dinner</span></div>
+                  <div class="fmp-rule-item"><span class="fmp-rule-icon">🔁</span><span>No Dal repeated within 7 days</span></div>
+                  <div class="fmp-rule-item"><span class="fmp-rule-icon">🚫</span><span>No dish repeated within 15 days</span></div>
+                  <div class="fmp-rule-item"><span class="fmp-rule-icon">🥔</span><span>Aloo: max once/day · max 5×/week</span></div>
+                  <div class="fmp-rule-item"><span class="fmp-rule-icon">⭐</span><span>Star Dish required every Lunch &amp; Dinner</span></div>
+                  <div class="fmp-rule-item"><span class="fmp-rule-icon">💾</span><span>All data from Django DB (Excel imported)</span></div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SUB-TAB B: Dish Collector (UNCHANGED) ─────────── -->
+      <div id="fmpCollectionTab" class="fmp-subtab-content">
+        <div id="foodMenuDash">
+          <div class="fmd-topbar">
+            <div class="fmd-brand">
+              <div class="fmd-brand-icon">
+                <svg viewBox="0 0 24 24">
+                  <path d="M12 2C6 8 4 12 4 15a8 8 0 0 0 16 0c0-3-2-7-8-13z"/>
+                  <path d="M12 2v20"/>
+                </svg>
+              </div>
+              <div>
+                <div class="fmd-brand-name">🌿 Dish Collector</div>
+                <div class="fmd-brand-sub">Saved to Django DB · Excel data imported automatically</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <select id="fmd-brand-filter" class="fmp-brand-sel"
+                      style="font-size:12px;padding:6px 10px;"
+                      onchange="_loadDishes()">
+                <option value="uniliv">🟠 UNILIV</option>
+                <option value="huddle">🔵 HUDDLE</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="fmd-stats">
+            <div class="fmd-stat"><div class="fmd-stat-label">Total Dishes</div>
+              <div class="fmd-stat-val green" id="fmd-st-total">0</div></div>
+            <div class="fmd-stat"><div class="fmd-stat-label">Breakfast</div>
+              <div class="fmd-stat-val" id="fmd-st-bf">0</div></div>
+            <div class="fmd-stat"><div class="fmd-stat-label">Lunch</div>
+              <div class="fmd-stat-val" id="fmd-st-ln">0</div></div>
+            <div class="fmd-stat"><div class="fmd-stat-label">Dinner</div>
+              <div class="fmd-stat-val" id="fmd-st-dn">0</div></div>
+          </div>
+
+          <div class="fmd-layout">
+            <div>
+              <div class="fmd-panel">
+                <div class="fmd-panel-title">Add a Dish to Database</div>
+                <div class="fmd-veg-badge">
+                  <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+                  Vegetarian only · Saved to Django DB
+                </div>
+                <div class="fmd-field">
+                  <label class="fmd-label">Dish Name <span style="color:#e53e3e;">*</span></label>
+                  <input type="text" class="fmd-input" id="fmd-inp-name"
+                         placeholder="e.g. Palak Paneer"
+                         onkeydown="if(event.key==='Enter') fmdAddDish()">
+                </div>
+                <div class="fmd-field">
+                  <label class="fmd-label">Meal Type <span style="color:#e53e3e;">*</span></label>
+                  <select class="fmd-input" id="fmd-inp-meal">
+                    <option value="">Choose…</option>
+                    <option value="Breakfast">Breakfast</option>
+                    <option value="Lunch">Lunch</option>
+                    <option value="Dinner">Dinner</option>
+                    <option value="Snacks">Snacks</option>
+                  </select>
+                </div>
+                <div class="fmd-field">
+                  <label class="fmd-label">
+                    Ingredients
+                    <span style="font-weight:400;color:#94a3b8;font-size:11px;">(optional)</span>
+                  </label>
+                  <textarea class="fmd-input" id="fmd-inp-ing"
+                    placeholder="e.g. spinach, paneer, tomato…"
+                    style="min-height:60px;resize:vertical;"></textarea>
+                  <div style="font-size:11px;color:#94a3b8;margin-top:3px;">
+                    ℹ️ Ingredients are optional.
+                  </div>
+                </div>
+                <div class="fmd-field">
+                  <label class="fmd-label">Brand</label>
+                  <select class="fmd-input" id="fmd-inp-brand">
+                    <option value="uniliv">UNILIV</option>
+                    <option value="huddle">HUDDLE</option>
+                  </select>
+                </div>
+                <div class="fmd-field-row" style="gap:12px;">
+                  <div class="fmd-field" style="display:flex;align-items:center;gap:8px;margin-bottom:0;">
+                    <input type="checkbox" id="fmd-inp-star"
+                           style="width:15px;height:15px;cursor:pointer;accent-color:#e53e3e;">
+                    <label class="fmd-label" for="fmd-inp-star" style="margin:0;cursor:pointer;">⭐ Star Dish</label>
+                  </div>
+                  <div class="fmd-field" style="display:flex;align-items:center;gap:8px;margin-bottom:0;">
+                    <input type="checkbox" id="fmd-inp-dal"
+                           style="width:15px;height:15px;cursor:pointer;accent-color:#16a34a;">
+                    <label class="fmd-label" for="fmd-inp-dal" style="margin:0;cursor:pointer;">🫘 Dal Dish</label>
+                  </div>
+                </div>
+                <div class="fmd-warn-box" id="fmd-nv-warn" style="display:none;">
+                  ⚠️ Non-vegetarian ingredient detected! Only veg dishes allowed.
+                </div>
+                <div class="fmd-warn-box" id="fmd-api-error" style="display:none;"></div>
+                <div class="fmd-form-btns" style="margin-top:12px;">
+                  <button class="fmd-btn fmd-btn-primary" id="fmd-btn-submit"
+                          onclick="fmdAddDish()">💾 Save to Database</button>
+                  <button class="fmd-btn" onclick="fmdClearForm()">Clear</button>
+                </div>
+                <div class="fmd-toast" id="fmd-toast"></div>
+              </div>
+              <div class="fmd-panel">
+                <div class="fmd-panel-title">By Meal Type</div>
+                <div id="fmd-chart"></div>
+              </div>
+            </div>
+            <div>
+              <div class="fmd-panel">
+                <div class="fmd-panel-title">Dish Collection — Django Database</div>
+                <div class="fmd-toolbar">
+                  <input type="text" class="fmd-input" id="fmd-search"
+                    placeholder="🔍 Search by name or ingredient…"
+                    oninput="fmdFilterRender()">
+                </div>
+                <div class="fmd-chips">
+                  <div class="fmd-chip active" data-f="All"       onclick="fmdSetFilter(this)">All</div>
+                  <div class="fmd-chip"        data-f="Breakfast" onclick="fmdSetFilter(this)">Breakfast</div>
+                  <div class="fmd-chip"        data-f="Lunch"     onclick="fmdSetFilter(this)">Lunch</div>
+                  <div class="fmd-chip"        data-f="Dinner"    onclick="fmdSetFilter(this)">Dinner</div>
+                  <div class="fmd-chip"        data-f="Snacks"    onclick="fmdSetFilter(this)">Snacks</div>
+                  <div class="fmd-chip"        data-f="Star"      onclick="fmdSetFilter(this)">⭐ Star</div>
+                  <div class="fmd-chip"        data-f="Dal"       onclick="fmdSetFilter(this)">🫘 Dal</div>
+                </div>
+                <div class="fmd-sort-row">
+                  <label class="fmd-label">Sort:</label>
+                  <select class="fmd-input" id="fmd-sort" onchange="fmdFilterRender()">
+                    <option value="newest">Newest first</option>
+                    <option value="oldest">Oldest first</option>
+                    <option value="az">A → Z</option>
+                    <option value="za">Z → A</option>
+                  </select>
+                </div>
+                <div class="fmd-cards-grid" id="fmd-cards">
+                  <div style="grid-column:1/-1;text-align:center;padding:2rem;color:#64748b;font-size:13px;">
+                    Connecting to database…
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <footer class="text-center py-4 text-muted small">© 2026 UNILIV – Food Menu Intelligence</footer>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════════
+           NEW FEATURE: SUB-TAB C — 15-DAY INTELLIGENT MENU PLANNER
+           Manual planning · 7 rules · Date customization
+           PDF + Excel export
+      ══════════════════════════════════════════════════════════ -->
+      <div id="fmpManualPlannerTab" class="fmp-subtab-content active">
+        <div class="pmp2-wrapper">
+
+          <!-- Controls bar -->
+          <div class="pmp2-ctrl-bar">
+            <div class="pmp2-ctrl-left">
+              <div class="pmp2-head-title">📋 15-Day Intelligent Menu Planner</div>
+              <div class="pmp2-head-sub">Entity-aware · 7 rules enforced · SOP validated · PDF &amp; Excel export</div>
+            </div>
+            <div class="pmp2-ctrl-right">
+              <!-- NEW FEATURE: Entity selector -->
+              <div class="pmp2-date-group">
+                <label class="pmp2-date-lbl">Entity</label>
+                <select id="pmp2-entity-sel" class="pmp2-entity-sel fmp-brand-sel"
+                        onchange="pmp2UpdateEntity(this.value)">
+                  <option value="uniliv">🟠 UNILIV — Premium</option>
+                  <option value="huddle">🔵 HUDDLE — Affordable</option>
+                </select>
+              </div>
+              <!-- Date selector group -->
+              <div class="pmp2-date-group">
+                <label class="pmp2-date-lbl">Start Date</label>
+                <input type="date" id="pmp2-ctrl-date" class="pmp2-ctrl-date-inp">
+                <button class="fmp-btn fmp-btn-primary" onclick="pmp2CreatePlan()">📅 Generate Plan</button>
+                <button class="fmp-btn fmp-btn-outline" onclick="pmp2ResetPlan()"  title="Clear all dishes (keep dates)">↺ Reset</button>
+                <button class="fmp-btn fmp-btn-outline" onclick="pmp2DeletePlan()" title="Delete plan from storage" style="color:#dc2626;border-color:#fca5a5;">🗑</button>
+              </div>
+              <!-- Export buttons -->
+              <div class="pmp2-export-group">
+                <button class="fmp-btn fmp-btn-outline" onclick="pmp2ExportPDF()">📄 Export PDF</button>
+                <button class="fmp-btn fmp-btn-outline" onclick="pmp2ExportExcel()">📊 Export Excel</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Loading banner -->
+          <div id="pmp2-loading-banner" class="pmp2-loading-banner" style="display:none;">
+            ⏳ Loading Dish Collection…
+          </div>
+
+          <!-- 7-rule info strip -->
+          <div class="pmp2-rules-strip">
+            <span class="pmp2-rule-pill pmp2-rp-blue">🏢 Entity SOP only</span>
+            <span class="pmp2-rule-pill pmp2-rp-red">❌ No repeat (7 days)</span>
+            <span class="pmp2-rule-pill pmp2-rp-green">🫘 Dal mandatory L+D</span>
+            <span class="pmp2-rule-pill pmp2-rp-green">🔁 No Dal repeat (7d)</span>
+            <span class="pmp2-rule-pill pmp2-rp-amber">⭐ Star dish L+D</span>
+            <span class="pmp2-rule-pill pmp2-rp-red">🥔 Aloo max 1/day · 5/week</span>
+            <span class="pmp2-rule-pill pmp2-rp-purple">🚫 No same Dal L+D same day</span>
+          </div>
+
+          <!-- Stats bar -->
+          <div class="pmp2-stats-bar">
+            <div class="pmp2-stat-card">
+              <div class="pmp2-stat-num" id="pmp2-st-days">—</div>
+              <div class="pmp2-stat-lbl">Days Active</div>
+            </div>
+            <div class="pmp2-stat-card">
+              <div class="pmp2-stat-num" id="pmp2-st-dishes">—</div>
+              <div class="pmp2-stat-lbl">Dishes Planned</div>
+            </div>
+            <div class="pmp2-stat-card pmp2-sc-warn">
+              <div class="pmp2-stat-num" id="pmp2-st-nostar">—</div>
+              <div class="pmp2-stat-lbl">⭐ Missing Star</div>
+            </div>
+            <div class="pmp2-stat-card pmp2-sc-ok">
+              <div class="pmp2-stat-num" id="pmp2-st-pct">—</div>
+              <div class="pmp2-stat-lbl">Plan Complete</div>
+            </div>
+          </div>
+
+          <!-- Toast -->
+          <div class="pmp2-toast" id="pmp2-toast"></div>
+
+          <!-- 15-day grid (rendered by JS) -->
+          <div class="pmp2-grid-outer" id="pmp2-grid-outer">
+            <!-- JS renders here: setup state or 15-day grid -->
+          </div>
+
+          <!-- Violations panel (rendered by JS) -->
+          <div id="pmp2-violations" class="pmp2-violations-panel" style="display:none;"></div>
+
+          <!-- NEW FEATURE (Chart): Dish Repetition Analytics panel -->
+          <div id="pmp2-chart-section" class="pmp2-chart-section" style="display:none;">
+            <div class="pmp2-chart-header">
+              <div class="pmp2-chart-title">
+                📊 Dish Repetition Analysis
+                <span class="pmp2-chart-sub">Frequency of each dish across the 15-day plan</span>
+              </div>
+              <div class="pmp2-chart-legend">
+                <span class="pmp2-cleg" style="--cc:#2563eb">🌅 Breakfast</span>
+                <span class="pmp2-cleg" style="--cc:#16a34a">☀️ Lunch</span>
+                <span class="pmp2-cleg" style="--cc:#d97706">🌤 Snacks</span>
+                <span class="pmp2-cleg" style="--cc:#7c3aed">🌙 Dinner</span>
+              </div>
+              <button class="pmp2-chart-toggle-btn" id="pmp2-chart-toggle-btn"
+                      onclick="pmp2ToggleChart()">▲ Hide</button>
+            </div>
+            <div id="pmp2-chart-body" class="pmp2-chart-body">
+              <div id="pmp2-chart-wrap" class="pmp2-chart-wrap">
+                <canvas id="pmp2-chart-canvas"></canvas>
+              </div>
+            </div>
+          </div>
+
+        </div>
+        <footer class="text-center py-4 text-muted small">© 2026 UNILIV – Food Menu Intelligence</footer>
+      </div>
+      <!-- END NEW FEATURE -->
+
+    </div><!-- /foodMenuTab -->
+  </div><!-- /content-area -->
+</div><!-- /main-wrapper -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Organogram — DO NOT MODIFY -->
+<script src="./scripts/script.js"
+        onerror="_onScriptError('script.js')"></script>
+
+<!-- Food Dashboard v7.0 — all food + planner logic -->
+<script src="./scripts/food_dashboard.js"
+        onerror="_onScriptError('food_dashboard.js')"></script>
+
+</body>
+</html>
