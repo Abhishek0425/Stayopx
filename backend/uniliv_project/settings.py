@@ -1,14 +1,16 @@
-"""
-uniliv_project/settings.py
-Django settings for Uniliv Dashboard Backend.
-"""
+"""uniliv_project/settings.py"""
 from pathlib import Path
+import os
+import dj_database_url
+from dotenv import load_dotenv
+
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-uniliv-replace-in-production'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-uniliv-replace-in-production')
 
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = ['*']
 
@@ -52,12 +54,25 @@ TEMPLATES = [{
 
 WSGI_APPLICATION = 'uniliv_project.wsgi.application'
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# ── Database — Supabase PostgreSQL / SQLite fallback ─────────────
+DATABASE_URL = os.getenv('DATABASE_URL')
+
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+            ssl_require=True
+        )
     }
-}
+else:
+    # Local fallback — works without .env file
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -68,26 +83,26 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE     = 'Asia/Kolkata'
-USE_I18N = True
-USE_TZ   = True
+USE_I18N      = True
+USE_TZ        = True
 
 STATIC_URL  = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# ── CORS — allow the frontend (file:// or localhost) to call the API ──────
+# ── CORS ──────────────────────────────────────────────────────────
 CORS_ALLOW_ALL_ORIGINS  = True
 CORS_ALLOW_CREDENTIALS  = True
 
-# ── CSRF — allow requests from the frontend origin ────────────────────────
+# ── CSRF ──────────────────────────────────────────────────────────
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost',
     'http://127.0.0.1',
-    'http://localhost:5500',    # Live Server (VS Code)
+    'http://localhost:5500',
     'http://127.0.0.1:5500',
     'http://localhost:3000',
 ]
 
-SESSION_COOKIE_AGE          = 86400
-SESSION_SAVE_EVERY_REQUEST  = True
+SESSION_COOKIE_AGE         = 86400
+SESSION_SAVE_EVERY_REQUEST = True

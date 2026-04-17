@@ -1,62 +1,68 @@
 #!/bin/bash
 # ================================================================
-# Uniliv Dashboard Backend — One-command setup
-# Run from inside the /backend folder:
+# Stayopx / UNILIV Backend — One-command setup (Mac / Linux)
+# Run from inside the backend/ folder:
 #   cd backend && bash setup.sh
 # ================================================================
 set -e
 
 echo ""
-echo "========================================"
-echo "  UNILIV BACKEND — SETUP"
-echo "========================================"
+echo "============================================================"
+echo "  STAYOPX / UNILIV BACKEND — SETUP"
+echo "============================================================"
 
-# 1. Python virtual environment
+# 1. Virtual environment
 echo ""
-echo "▶ Creating virtual environment (venv)..."
+echo "▶ [1/6] Creating virtual environment..."
 python3 -m venv venv
 source venv/bin/activate
 echo "  ✅ venv ready ($(python --version))"
 
 # 2. Dependencies
 echo ""
-echo "▶ Installing dependencies..."
+echo "▶ [2/6] Installing dependencies..."
 pip install --quiet --upgrade pip
 pip install --quiet -r requirements.txt
-echo "  ✅ Django + cors-headers installed"
+echo "  ✅ All packages installed"
 
-# 3. Database migrations
+# 3. Migrations
 echo ""
-echo "▶ Applying database migrations..."
+echo "▶ [3/6] Running database migrations..."
+python manage.py makemigrations
 python manage.py migrate
-echo "  ✅ db.sqlite3 ready"
+echo "  ✅ Tables ready"
 
-# 4. Create superuser for admin panel
+# 4. Seed dishes + users
 echo ""
-echo "▶ Creating admin user..."
-python manage.py shell -c "
-from django.contrib.auth.models import User
-if not User.objects.filter(username='admin').exists():
-    User.objects.create_superuser('admin', 'admin@uniliv.com', 'admin123')
-    print('  ✅ Admin created  → username: admin / password: admin123')
-else:
-    print('  ℹ  Admin already exists')
-"
+echo "▶ [4/6] Seeding dishes + creating user accounts..."
+python seed_db.py
+
+# 5. Verify
+echo ""
+echo "▶ [5/6] Verifying setup..."
+python manage.py check
+echo "  ✅ No issues found"
 
 echo ""
-echo "========================================"
+echo "============================================================"
 echo "  SETUP COMPLETE"
-echo "========================================"
+echo "============================================================"
 echo ""
-echo "  Start the backend:"
+echo "  LOGIN CREDENTIALS:"
+echo "  admin          / admin123   → Both dashboards"
+echo "  property_admin / prop123    → Property dashboard only"
+echo "  food_uniliv    / food123    → Food dashboard (UNILIV)"
+echo "  food_huddle    / huddle123  → Food dashboard (HUDDLE)"
+echo ""
+echo "  Admin panel:"
+echo "  http://127.0.0.1:8000/admin  (admin / admin123)"
+echo ""
+echo "  To START the server:"
 echo "    source venv/bin/activate"
 echo "    python manage.py runserver"
 echo ""
-echo "  API will be available at:"
-echo "    http://127.0.0.1:8000/api/dishes/"
-echo "    http://127.0.0.1:8000/api/menu/generate/"
-echo ""
-echo "  Admin panel:"
-echo "    http://127.0.0.1:8000/admin"
-echo "    username: admin | password: admin123"
+echo "  API endpoints:"
+echo "    GET  http://127.0.0.1:8000/api/dishes/"
+echo "    POST http://127.0.0.1:8000/api/auth/login/"
+echo "    POST http://127.0.0.1:8000/api/menu/generate/"
 echo ""

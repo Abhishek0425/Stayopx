@@ -1449,3 +1449,32 @@ body.dark-mode .pmp2-tag-name { color: var(--fmp-text); }
   padding: 6px;
 }
 
+
+
+/* ============================================================
+   AUTH: Navbar user info + logout button
+   ============================================================ */
+.nav-user-info {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.nav-role-badge {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: rgba(229,62,62,.25);
+  color: #fca5a5;
+  border: 1px solid rgba(229,62,62,.3);
+}
+.nav-username {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255,255,255,.85);
+}
+@media (max-width: 480px) {
+  .nav-user-info { display: none; }
+}

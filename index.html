@@ -3,7 +3,24 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Uniliv - Dashboard Panel</title>
+<title>UNILIV — Stayopx Platform</title>
+
+<!-- ══ AUTH LOGIC — decides what to show before page renders ════ -->
+<script>
+  window.UNILIV_API_BASE = 'http://127.0.0.1:8000';
+
+  // Check session on load
+  (function() {
+    var raw = sessionStorage.getItem('uniliv_user');
+    window._UNILIV_LOGGED_IN = !!raw;
+    if (raw) {
+      var u = JSON.parse(raw);
+      window._CURRENT_USER  = u;
+      window._CURRENT_ROLE  = u.role;
+      window._CURRENT_BRAND = u.brand;
+    }
+  })();
+</script>
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -13,13 +30,136 @@
 <link rel="stylesheet" href="./styles/style.css">
 <link rel="stylesheet" href="./styles/menu_styles.css">
 
+<style>
+/* ══ LOGIN OVERLAY ══════════════════════════════════════════════ */
+#loginOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  background: #0f172a;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Left branding panel */
+.lp-brand {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+  padding: 60px 40px;
+  position: relative;
+  overflow: hidden;
+}
+.lp-brand::before {
+  content:'';
+  position:absolute; width:400px; height:400px; border-radius:50%;
+  background:rgba(229,62,62,.08); top:-100px; left:-100px;
+}
+.lp-brand::after {
+  content:'';
+  position:absolute; width:300px; height:300px; border-radius:50%;
+  background:rgba(49,130,206,.1); bottom:-80px; right:-80px;
+}
+.lp-logo-wrap {
+  width:90px; height:90px; border-radius:22px;
+  background:rgba(255,255,255,.08);
+  display:flex; align-items:center; justify-content:center;
+  margin-bottom:24px;
+  border:1px solid rgba(255,255,255,.12);
+  overflow:hidden;
+}
+.lp-logo-wrap img { width:68px; }
+.lp-title { font-size:36px; font-weight:900; color:#fff; letter-spacing:3px; margin-bottom:10px; }
+.lp-sub   { font-size:14px; color:rgba(255,255,255,.5); text-align:center; max-width:280px; line-height:1.6; margin-bottom:44px; }
+.lp-badges { display:flex; flex-direction:column; gap:12px; width:100%; max-width:300px; }
+.lp-badge  {
+  display:flex; align-items:center; gap:12px;
+  padding:12px 16px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:12px;
+  color:rgba(255,255,255,.75);
+  font-size:13px; font-weight:500;
+}
+.lp-badge span { font-size:18px; }
+
+/* Right form panel */
+.lp-form {
+  width: 460px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  padding: 60px 48px;
+}
+.lp-form-hdr { text-align:center; margin-bottom:36px; }
+.lp-form-hdr h2 { font-size:26px; font-weight:800; color:#0f172a; margin-bottom:8px; }
+.lp-form-hdr p  { font-size:14px; color:#64748b; }
+
+.lp-group { width:100%; margin-bottom:20px; }
+.lp-group label {
+  display:block; font-size:12px; font-weight:700; color:#374151;
+  text-transform:uppercase; letter-spacing:.06em; margin-bottom:7px;
+}
+.lp-group input {
+  width:100%; padding:13px 16px;
+  border:1.5px solid #e5e7eb; border-radius:10px;
+  font-size:14px; color:#0f172a; outline:none;
+  transition:border-color .2s, box-shadow .2s;
+  background:#f8fafc;
+}
+.lp-group input:focus {
+  border-color:#e53e3e; background:#fff;
+  box-shadow:0 0 0 3px rgba(229,62,62,.1);
+}
+.lp-error {
+  width:100%; display:none;
+  background:#fef2f2; border:1px solid #fca5a5; color:#dc2626;
+  border-radius:10px; padding:11px 15px;
+  font-size:13px; font-weight:500; margin-bottom:18px;
+}
+.lp-btn {
+  width:100%; padding:14px;
+  background:linear-gradient(135deg, #e53e3e, #ff6b6b);
+  color:#fff; border:none; border-radius:10px;
+  font-size:15px; font-weight:700; cursor:pointer;
+  transition:transform .2s, box-shadow .2s, opacity .2s;
+  margin-top:4px;
+}
+.lp-btn:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(229,62,62,.35); }
+.lp-btn:active { transform:scale(.98); }
+.lp-btn:disabled { opacity:.65; cursor:not-allowed; transform:none; }
+.lp-footer { margin-top:32px; text-align:center; font-size:12px; color:#94a3b8; }
+
+/* ══ NAVBAR AUTH ════════════════════════════════════════════════ */
+.nav-user-info { display:flex; align-items:center; gap:7px; }
+.nav-role-badge {
+  font-size:10px; font-weight:800; text-transform:uppercase;
+  letter-spacing:.06em; padding:2px 8px; border-radius:20px;
+  background:rgba(229,62,62,.25); color:#fca5a5;
+  border:1px solid rgba(229,62,62,.3);
+}
+.nav-username { font-size:13px; font-weight:600; color:rgba(255,255,255,.85); }
+
+@media (max-width: 780px) {
+  .lp-brand { display:none; }
+  .lp-form  { width:100%; padding:40px 28px; }
+}
+@media (max-width: 480px) {
+  .nav-user-info { display:none; }
+}
+</style>
+
 <script>
-  window.UNILIV_API_BASE = 'http://127.0.0.1:8000';
   function dismissWelcome() {
     var ws = document.getElementById('welcomeScreen');
     if (!ws) return;
     ws.style.transition = 'opacity 0.4s ease';
-    ws.style.opacity = '0';
+    ws.style.opacity    = '0';
     setTimeout(function() { ws.style.display = 'none'; }, 420);
   }
   window.addEventListener('DOMContentLoaded', function() { setTimeout(dismissWelcome, 2000); });
@@ -38,6 +178,57 @@
 <div id="_scriptErrorBanner" style="display:none;position:fixed;top:60px;left:0;right:0;z-index:9999;
   background:#b91c1c;color:#fff;padding:12px 20px;font-size:13px;font-family:sans-serif;"></div>
 
+<!-- ══════════════════════════════════════════════════════════════
+     LOGIN OVERLAY — shown when not authenticated.
+     Hides itself on successful login.
+     ══════════════════════════════════════════════════════════════ -->
+<div id="loginOverlay">
+  <!-- Left: Branding -->
+  <div class="lp-brand">
+    <div class="lp-logo-wrap">
+      <img src="./Assets/Image/uniliv_LOGO-removebg-preview.png"
+           alt="UNILIV"
+           onerror="this.parentNode.innerHTML='🏢'">
+    </div>
+    <div class="lp-title">UNILIV</div>
+    <div class="lp-sub">Stayopx — AI-Powered Hospitality Intelligence Platform</div>
+    <div class="lp-badges">
+      <div class="lp-badge"><span>📊</span> Property Cost Analytics</div>
+      <div class="lp-badge"><span>🥗</span> Food &amp; Menu Intelligence</div>
+      <div class="lp-badge"><span>🤖</span> AI-Driven Insights</div>
+    </div>
+  </div>
+
+  <!-- Right: Form -->
+  <div class="lp-form">
+    <div class="lp-form-hdr">
+      <h2>Welcome Back</h2>
+      <p>Sign in to access your dashboard</p>
+    </div>
+
+    <div class="lp-error" id="lp-error"></div>
+
+    <div class="lp-group">
+      <label for="lp-username">Username</label>
+      <input type="text" id="lp-username" placeholder="Enter your username"
+             autocomplete="username"
+             onkeydown="if(event.key==='Enter') doLogin()">
+    </div>
+
+    <div class="lp-group">
+      <label for="lp-password">Password</label>
+      <input type="password" id="lp-password" placeholder="Enter your password"
+             autocomplete="current-password"
+             onkeydown="if(event.key==='Enter') doLogin()">
+    </div>
+
+    <button class="lp-btn" id="lp-btn" onclick="doLogin()">Sign In →</button>
+
+    <div class="lp-footer">© 2026 UNILIV · Stayopx Intelligence Platform</div>
+  </div>
+</div>
+<!-- END LOGIN OVERLAY -->
+
 <!-- ===== NAVBAR ===== -->
 <nav class="navbar navbar-expand-lg fixed-top shadow-sm custom-navbar">
   <div class="container-fluid">
@@ -48,7 +239,16 @@
       </div>
       <span class="navbar-brand-text">UNILIV</span>
     </div>
-    <button class="btn btn-sm btn-outline-light ms-auto" onclick="toggleDarkMode()">🌙</button>
+
+    <!-- User info + logout — right side of navbar -->
+    <div class="d-flex align-items-center gap-2 ms-auto">
+      <span class="nav-user-info">
+        <span class="nav-role-badge" id="nav-role-badge"></span>
+        <span class="nav-username"   id="nav-username"></span>
+      </span>
+      <button class="btn btn-sm btn-outline-light" onclick="toggleDarkMode()">🌙</button>
+      <button class="btn btn-sm btn-outline-danger" onclick="doLogout()">⏏ Logout</button>
+    </div>
   </div>
 </nav>
 
@@ -508,6 +708,141 @@
 <!-- Food Dashboard v7.0 — all food + planner logic -->
 <script src="./scripts/food_dashboard.js"
         onerror="_onScriptError('food_dashboard.js')"></script>
+
+<!-- ══ AUTH CONTROLLER ══════════════════════════════════════════
+     Handles: login form, session, role-based tab visibility,
+              logout. All in this one file — no login.html needed.
+     ══════════════════════════════════════════════════════════ -->
+<script>
+(function() {
+  var overlay = document.getElementById('loginOverlay');
+  var raw     = sessionStorage.getItem('uniliv_user');
+
+  // ── Already logged in → hide overlay, apply role ─────────────
+  if (raw) {
+    if (overlay) overlay.style.display = 'none';
+    _applyRole(JSON.parse(raw));
+    return;
+  }
+
+  // ── Not logged in → show overlay ─────────────────────────────
+  if (overlay) overlay.style.display = 'flex';
+})();
+
+/* Called by login button */
+async function doLogin() {
+  var username = document.getElementById('lp-username').value.trim();
+  var password = document.getElementById('lp-password').value.trim();
+  var btn      = document.getElementById('lp-btn');
+  var errEl    = document.getElementById('lp-error');
+
+  errEl.style.display = 'none';
+  if (!username || !password) {
+    _lpError('Please enter your username and password.'); return;
+  }
+
+  btn.disabled    = true;
+  btn.textContent = '⏳ Signing in…';
+
+  try {
+    var res  = await fetch((window.UNILIV_API_BASE || 'http://127.0.0.1:8000') + '/api/auth/login/', {
+      method:      'POST',
+      credentials: 'include',
+      headers:     { 'Content-Type': 'application/json' },
+      body:        JSON.stringify({ username: username, password: password })
+    });
+    var data = await res.json();
+
+    if (!data.success) {
+      _lpError(data.error || 'Invalid credentials.'); return;
+    }
+
+    // Save session
+    sessionStorage.setItem('uniliv_user', JSON.stringify(data));
+    window._CURRENT_USER  = data;
+    window._CURRENT_ROLE  = data.role;
+    window._CURRENT_BRAND = data.brand;
+
+    // Smooth hide overlay
+    var overlay = document.getElementById('loginOverlay');
+    if (overlay) {
+      overlay.style.transition = 'opacity .35s ease';
+      overlay.style.opacity    = '0';
+      setTimeout(function() { overlay.style.display = 'none'; }, 380);
+    }
+
+    // Apply role restrictions
+    _applyRole(data);
+
+  } catch(e) {
+    _lpError('Cannot reach server. Make sure Django is running on port 8000.');
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = 'Sign In →';
+  }
+}
+
+/* Apply role-based UI after login or page refresh */
+function _applyRole(user) {
+  var role  = user.role;
+  var brand = user.brand;
+
+  // Update navbar
+  var nameEl = document.getElementById('nav-username');
+  var roleEl = document.getElementById('nav-role-badge');
+  if (nameEl) nameEl.textContent = user.username;
+  if (roleEl) {
+    var labels = { property:'Property', food:'Food', admin:'Admin' };
+    roleEl.textContent = labels[role] || role;
+  }
+
+  // Show/hide sidebar tabs
+  var propBtn = document.querySelector('[onclick*="organogramTab"]');
+  var foodBtn = document.querySelector('[onclick*="foodMenuTab"]');
+
+  if (role === 'property') {
+    if (foodBtn) foodBtn.style.display = 'none';
+    if (typeof switchTab === 'function') switchTab(null, 'organogramTab');
+
+  } else if (role === 'food') {
+    if (propBtn) propBtn.style.display = 'none';
+    if (typeof switchTab === 'function') switchTab(null, 'foodMenuTab');
+    // Auto-set brand
+    setTimeout(function() {
+      var s1 = document.getElementById('fmd-brand-filter');
+      var s2 = document.getElementById('pmp2-entity-sel');
+      if (s1) s1.value = brand;
+      if (s2) s2.value = brand;
+      if (typeof fmpSetBrand === 'function') fmpSetBrand(brand);
+    }, 300);
+  }
+  // admin → no restrictions, sees everything
+}
+
+/* Logout */
+function doLogout() {
+  sessionStorage.removeItem('uniliv_user');
+  fetch((window.UNILIV_API_BASE || 'http://127.0.0.1:8000') + '/api/auth/logout/',
+        { method: 'POST', credentials: 'include' })
+    .finally(function() {
+      // Show login overlay again instead of redirecting
+      var overlay = document.getElementById('loginOverlay');
+      if (overlay) {
+        document.getElementById('lp-username').value = '';
+        document.getElementById('lp-password').value = '';
+        document.getElementById('lp-error').style.display = 'none';
+        overlay.style.opacity = '1';
+        overlay.style.display = 'flex';
+      }
+    });
+}
+
+function _lpError(msg) {
+  var el = document.getElementById('lp-error');
+  el.textContent   = '⚠ ' + msg;
+  el.style.display = 'block';
+}
+</script>
 
 </body>
 </html>

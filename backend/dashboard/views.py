@@ -1,6 +1,8 @@
-"""dashboard/views.py — API endpoints."""
+"""dashboard/views.py — All API endpoints + auth."""
 import json
 from datetime import date, timedelta
+
+from django.contrib.auth import authenticate, login, logout
 from django.http  import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
@@ -9,6 +11,7 @@ from .models     import Dish, ScheduledMeal, GeneratedMenu
 from .validators import validate_dish, ValidationError
 
 
+# ── Helpers ───────────────────────────────────────────────────────
 def _ok(data=None, status=200, **kw):
     p = {'success': True}
     if data is not None: p['data'] = data
@@ -19,11 +22,79 @@ def _err(msg, status=400):
     return JsonResponse({'success': False, 'error': msg}, status=status)
 
 def _body(req):
-    try: return json.loads(req.body or '{}')
+    try:    return json.loads(req.body or '{}')
     except: return {}
 
+def _get_profile(user):
+    """Return (role, brand) from UserProfile — fallback to admin/uniliv."""
+    try:
+        return user.userprofile.role, user.userprofile.brand
+    except Exception:
+        return 'admin', 'uniliv'
 
-# ── GET /api/dishes/ ──────────────────────────────────────────────────────────
+
+# ══════════════════════════════════════════════════════════════════
+#  AUTH ENDPOINTS
+# ══════════════════════════════════════════════════════════════════
+
+# POST /api/auth/login/
+@csrf_exempt
+def api_login(request):
+    if request.method != 'POST':
+        return _err('POST required.', 405)
+
+    b        = _body(request)
+    username = b.get('username', '').strip()
+    password = b.get('password', '').strip()
+
+    if not username or not password:
+        return _err('Username and password are required.', 400)
+
+    user = authenticate(request, username=username, password=password)
+    if user is None:
+        return JsonResponse(
+            {'success': False, 'error': 'Invalid username or password.'},
+            status=401
+        )
+
+    login(request, user)
+    role, brand = _get_profile(user)
+
+    return JsonResponse({
+        'success':  True,
+        'username': user.username,
+        'email':    user.email,
+        'role':     role,
+        'brand':    brand,
+    })
+
+
+# POST /api/auth/logout/
+@csrf_exempt
+def api_logout(request):
+    logout(request)
+    return _ok({'message': 'Logged out successfully.'})
+
+
+# GET /api/auth/me/
+def api_me(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'authenticated': False}, status=401)
+    role, brand = _get_profile(request.user)
+    return JsonResponse({
+        'authenticated': True,
+        'username':      request.user.username,
+        'email':         request.user.email,
+        'role':          role,
+        'brand':         brand,
+    })
+
+
+# ══════════════════════════════════════════════════════════════════
+#  DISH ENDPOINTS
+# ══════════════════════════════════════════════════════════════════
+
+# GET /api/dishes/
 @require_http_methods(['GET'])
 def api_get_dishes(request):
     brand  = request.GET.get('brand', 'uniliv')
@@ -31,20 +102,21 @@ def api_get_dishes(request):
     return _ok([d.to_dict() for d in dishes])
 
 
-# ── POST /api/add-dish/ ───────────────────────────────────────────────────────
+# POST /api/add-dish/
 @csrf_exempt
 @require_http_methods(['POST'])
 def api_add_dish(request):
     b           = _body(request)
-    dish_name   = (b.get('dish_name')   or '').strip()
-    meal_type   = (b.get('meal_type')   or '').strip()
-    brand       = (b.get('brand','uniliv') or 'uniliv').strip()
-    ingredients = (b.get('ingredients') or '').strip()
+    dish_name   = (b.get('dish_name')        or '').strip()
+    meal_type   = (b.get('meal_type')        or '').strip()
+    brand       = (b.get('brand', 'uniliv')  or 'uniliv').strip()
+    ingredients = (b.get('ingredients')      or '').strip()
     is_star     = bool(b.get('is_star', False))
     is_dal      = bool(b.get('is_dal',  False))
 
-    if not dish_name: return _err('dish_name is required.')
-    if meal_type not in ('Breakfast','Lunch','Dinner','Snacks'):
+    if not dish_name:
+        return _err('dish_name is required.')
+    if meal_type not in ('Breakfast', 'Lunch', 'Dinner', 'Snacks'):
         return _err('meal_type must be Breakfast, Lunch, Dinner, or Snacks.')
 
     try:
@@ -58,10 +130,11 @@ def api_add_dish(request):
     )
     if not created:
         return _err(f'"{dish_name}" already exists for {brand.upper()}.')
+
     return _ok(dish.to_dict(), status=201)
 
 
-# ── DELETE /api/dishes/<id>/ ──────────────────────────────────────────────────
+# DELETE /api/dishes/<id>/
 @csrf_exempt
 @require_http_methods(['DELETE'])
 def api_delete_dish(request, dish_id):
@@ -72,85 +145,74 @@ def api_delete_dish(request, dish_id):
         return _err('Dish not found.', 404)
 
 
-# ── POST /api/menu/generate/ ──────────────────────────────────────────────────
-# Serves EXACT schedule from Excel (ScheduledMeal table).
-# 15-day menu = Week1 Mon-Sun (days 1-7) + Week2 Mon-Sun (days 8-14) + Week3 Mon (day 15)
+# ══════════════════════════════════════════════════════════════════
+#  MENU ENDPOINTS
+# ══════════════════════════════════════════════════════════════════
+
+# POST /api/menu/generate/
 @csrf_exempt
 @require_http_methods(['POST'])
 def api_generate_menu(request):
     b     = _body(request)
-    brand = (b.get('brand','uniliv') or 'uniliv').strip()
+    brand = (b.get('brand', 'uniliv') or 'uniliv').strip()
 
-    if brand not in ('uniliv','huddle'):
+    if brand not in ('uniliv', 'huddle'):
         return _err('brand must be uniliv or huddle.')
 
-    # Check schedule exists
-    schedule_count = ScheduledMeal.objects.filter(brand=brand).count()
-    if schedule_count == 0:
-        return _err(
-            f'No schedule found for {brand.upper()}. '
-            f'Run: python manage.py import_schedule'
-        )
+    if not ScheduledMeal.objects.filter(brand=brand).exists():
+        return _err(f'No schedule for {brand.upper()}. Run: python manage.py import_schedule')
 
-    DAYS_ORDER = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
-    today      = date.today()
-    days_out   = []
+    DAYS  = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
+    today = date.today()
+    out   = []
+    n     = 0
 
-    # Generate 15 days by cycling through weeks 1→4 (Mon-Sun each)
-    day_num = 0
     for week in range(1, 5):
-        for day_name in DAYS_ORDER:
-            if day_num >= 15:
-                break
-            day_num += 1
-            date_label = (today + timedelta(days=day_num - 1)).strftime('%a, %d %b')
-
+        for day in DAYS:
+            if n >= 15: break
+            n += 1
             try:
-                sm = ScheduledMeal.objects.get(brand=brand, week_number=week, day_of_week=day_name)
+                sm = ScheduledMeal.objects.get(brand=brand, week_number=week, day_of_week=day)
             except ScheduledMeal.DoesNotExist:
-                # Day missing in schedule — skip with placeholder
                 sm = None
 
-            def _slot(v):
-                return {'name': v.strip()} if v and v.strip() else None
+            def _s(v): return {'name': v.strip()} if v and v.strip() else None
 
-            days_out.append({
-                'day_number':   day_num,
-                'date_label':   date_label,
-                'week_number':  week,
-                'day_of_week':  day_name,
-                'brand':        brand,
-                'breakfast':    _slot(sm.breakfast1)  if sm else None,
-                'breakfast2':   _slot(sm.breakfast2)  if sm else None,
-                'lunch_dal':    _slot(sm.lunch_dal)   if sm else None,
-                'lunch_star':   _slot(sm.lunch_veg1)  if sm else None,   # veg1 = main veg (star)
-                'lunch_main':   _slot(sm.lunch_veg2)  if sm else None,   # veg2 = second veg
-                'snack':        _slot(sm.snack)       if sm else None,
-                'dinner_dal':   _slot(sm.dinner_dal)  if sm else None,
-                'dinner_star':  _slot(sm.dinner_veg1) if sm else None,   # veg1 = main dinner veg
-                'dinner_main':  _slot(sm.dinner_veg2) if sm else None,   # veg2 = second dinner veg
+            out.append({
+                'day_number':  n,
+                'date_label':  (today + timedelta(days=n-1)).strftime('%a, %d %b'),
+                'week_number': week,
+                'day_of_week': day,
+                'brand':       brand,
+                'breakfast':   _s(sm.breakfast1)  if sm else None,
+                'breakfast2':  _s(sm.breakfast2)  if sm else None,
+                'lunch_dal':   _s(sm.lunch_dal)   if sm else None,
+                'lunch_star':  _s(sm.lunch_veg1)  if sm else None,
+                'lunch_main':  _s(sm.lunch_veg2)  if sm else None,
+                'snack':       _s(sm.snack)        if sm else None,
+                'dinner_dal':  _s(sm.dinner_dal)  if sm else None,
+                'dinner_star': _s(sm.dinner_veg1) if sm else None,
+                'dinner_main': _s(sm.dinner_veg2) if sm else None,
             })
-        if day_num >= 15:
-            break
+        if n >= 15: break
 
     GeneratedMenu.objects.create(brand=brand)
-    return _ok({'brand': brand, 'days': days_out, 'source': 'excel_schedule'})
+    return _ok({'brand': brand, 'days': out, 'source': 'excel_schedule'})
 
 
-# ── GET /api/menu/stats/ ──────────────────────────────────────────────────────
+# GET /api/menu/stats/
 @require_http_methods(['GET'])
 def api_stats(request):
-    brand   = request.GET.get('brand','uniliv')
-    dishes  = Dish.objects.filter(brand=brand)
-    sched   = ScheduledMeal.objects.filter(brand=brand).count()
+    brand  = request.GET.get('brand', 'uniliv')
+    dishes = Dish.objects.filter(brand=brand)
     return _ok({
-        'total':     dishes.count(),
-        'breakfast': dishes.filter(meal_type='Breakfast').count(),
-        'lunch':     dishes.filter(meal_type='Lunch').count(),
-        'dinner':    dishes.filter(meal_type='Dinner').count(),
-        'snacks':    dishes.filter(meal_type='Snacks').count(),
-        'dals':      dishes.filter(is_dal=True).count(),
-        'stars':     dishes.filter(is_star=True).count(),
-        'unique_dals': dishes.filter(is_dal=True).values('dish_name').distinct().count(),
-        'schedule_days': sched,
+        'total':         dishes.count(),
+        'breakfast':     dishes.filter(meal_type='Breakfast').count(),
+        'lunch':         dishes.filter(meal_type='Lunch').count(),
+        'dinner':        dishes.filter(meal_type='Dinner').count(),
+        'snacks':        dishes.filter(meal_type='Snacks').count(),
+        'dals':          dishes.filter(is_dal=True).count(),
+        'stars':         dishes.filter(is_star=True).count(),
+        'unique_dals':   dishes.filter(is_dal=True).values('dish_name').distinct().count(),
+        'schedule_days': ScheduledMeal.objects.filter(brand=brand).count(),
     })
