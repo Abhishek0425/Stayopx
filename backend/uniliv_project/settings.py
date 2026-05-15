@@ -18,8 +18,7 @@ ALLOWED_HOSTS = [
     '.railway.app',
     '.render.com',
     '.onrender.com',
-    'stayopx.onrender.com',                # exact Render URL
-    '.github.io',
+    'stayopx.onrender.com',
     os.getenv('ALLOWED_HOST', ''),
 ]
 
@@ -50,7 +49,7 @@ ROOT_URLCONF = 'uniliv_project.urls'
 
 TEMPLATES = [{
     'BACKEND': 'django.template.backends.django.DjangoTemplates',
-    'DIRS': [],
+    'DIRS': [BASE_DIR / 'dashboard' / 'templates'],
     'APP_DIRS': True,
     'OPTIONS': {
         'context_processors': [
@@ -98,7 +97,7 @@ USE_TZ        = True
 # ── Static files (WhiteNoise serves them in production) ──────────
 STATIC_URL    = '/static/'
 STATIC_ROOT   = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -115,10 +114,12 @@ CSRF_TRUSTED_ORIGINS = [
     'http://localhost:3000',
     'https://*.railway.app',
     'https://*.onrender.com',
-    'https://stayopx.onrender.com',        # exact Render URL
-    'https://*.github.io',
-    'https://' + os.getenv('ALLOWED_HOST', 'localhost'),
 ]
 
 SESSION_COOKIE_AGE         = 86400
 SESSION_SAVE_EVERY_REQUEST = True
+
+# ── Media files (delivery proofs) ────────────────────────────────
+import os as _os
+MEDIA_URL  = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'

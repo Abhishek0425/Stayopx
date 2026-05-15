@@ -1,0 +1,164 @@
+/*
+ * food_ordering.css
+ * Styles for the Food Ordering & Delivery Management Module
+ * Linked from: index.html
+ * Do NOT modify existing dashboard styles.
+ */
+
+/* ── Food Ordering Module Styles ─────────────────────────── */
+.fo-stab {
+  padding:9px 18px;border:none;background:transparent;
+  color:#718096;font-size:13px;font-weight:500;cursor:pointer;
+  border-radius:8px 8px 0 0;border-bottom:2px solid transparent;
+  margin-bottom:-2px;transition:all .15s;
+}
+.fo-stab:hover { color:#2d3748;background:#f7fafc; }
+.fo-stab.active { color:#1a1a2e;border-bottom-color:#1a1a2e;font-weight:600; }
+.fo-panel { display:none; }
+.fo-panel.fo-active { display:block; }
+
+/* ═════════════════════════════════════════════════════════════
+   ORDER TRACKING (added — UPS-style horizontal step tracker)
+   Maps backend status → visual step:
+     Ordered    → step 3 "Being Prepared"  active
+     Dispatched → step 4 "Out for Delivery" active
+     Delivered  → step 5 "Delivered"        complete
+     Cancelled  → red banner, no step bar
+   ═════════════════════════════════════════════════════════════ */
+
+.fo-tracker {
+  background:#fff;
+  border:1px solid #e5e7eb;
+  border-radius:12px;
+  padding:24px 28px;
+  margin:16px 0 24px;
+}
+
+.fo-tracker-status {
+  font-size:22px;
+  font-weight:600;
+  margin:0 0 6px;
+  color:#6b7280;
+  line-height:1.3;
+}
+.fo-tracker-status.is-active    { color:#ff6b00; }
+.fo-tracker-status.is-delivered { color:#10b981; }
+.fo-tracker-status.is-cancelled { color:#dc2626; }
+
+.fo-tracker-expected { font-size:13px; color:#374151; margin:0; }
+.fo-tracker-expected span { color:#10b981; font-weight:600; }
+
+.fo-tracker-updated  { font-size:12px; color:#9ca3af; margin:4px 0 0; }
+
+/* the step bar */
+.fo-tracker-steps {
+  display:flex;
+  align-items:flex-start;
+  margin:28px 0 8px;
+}
+.fo-step {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  flex:0 0 auto;
+  width:100px;
+}
+.fo-step-dot {
+  width:18px;
+  height:18px;
+  border-radius:50%;
+  background:#e5e7eb;
+  border:3px solid #e5e7eb;
+  transition:all .25s ease;
+}
+.fo-step.is-done .fo-step-dot   { background:#ff6b00; border-color:#ff6b00; }
+.fo-step.is-active .fo-step-dot {
+  background:#ff6b00;
+  border-color:#ff6b00;
+  box-shadow:0 0 0 4px rgba(255,107,0,.18);
+  width:22px;
+  height:22px;
+}
+.fo-step-label {
+  margin-top:12px;
+  font-size:12px;
+  color:#9ca3af;
+  text-align:center;
+  line-height:1.4;
+  max-width:90px;
+  font-weight:500;
+}
+.fo-step.is-done  .fo-step-label,
+.fo-step.is-active .fo-step-label { color:#111827; }
+.fo-step.is-active .fo-step-label { font-weight:700; }
+
+.fo-step-line {
+  flex:1;
+  height:4px;
+  background:#e5e7eb;
+  margin-top:10px;
+  min-width:24px;
+  transition:background .25s ease;
+}
+.fo-step-line.is-done { background:#ff6b00; }
+
+/* the small Track button injected into every orders-table row */
+.fo-track-btn {
+  padding:4px 10px;
+  background:#fff7ed;
+  border:1.5px solid #fed7aa;
+  color:#c2410c;
+  border-radius:6px;
+  font-size:11.5px;
+  font-weight:600;
+  cursor:pointer;
+  margin-right:4px;
+  transition:background .15s;
+}
+.fo-track-btn:hover { background:#ffedd5; }
+
+/* the modal that holds the tracker */
+.fo-tracker-modal-bg {
+  position:fixed; inset:0;
+  background:rgba(15,23,42,.55);
+  display:none;
+  align-items:flex-start; justify-content:center;
+  z-index:9999;
+  padding:60px 16px 16px;
+  overflow-y:auto;
+}
+.fo-tracker-modal-bg.is-open { display:flex; }
+
+.fo-tracker-modal {
+  background:#fff;
+  border-radius:14px;
+  width:100%;
+  max-width:720px;
+  padding:24px 28px 28px;
+  position:relative;
+  box-shadow:0 20px 60px rgba(0,0,0,.25);
+}
+.fo-tracker-modal-close {
+  position:absolute;
+  top:10px; right:14px;
+  background:none; border:0;
+  font-size:24px;
+  color:#6b7280;
+  cursor:pointer;
+  line-height:1;
+}
+.fo-tracker-modal-close:hover { color:#111827; }
+.fo-tracker-modal h4 {
+  margin:0 0 6px;
+  font-size:14px;
+  color:#6b7280;
+  font-weight:500;
+}
+.fo-tracker-modal h4 b { color:#111827; font-weight:700; }
+
+/* responsive */
+@media (max-width:720px) {
+  .fo-step       { width:70px; }
+  .fo-step-label { font-size:11px; max-width:70px; }
+  .fo-tracker    { padding:20px 18px; }
+}

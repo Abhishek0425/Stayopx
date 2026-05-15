@@ -15,7 +15,7 @@
     window.location.hostname === '127.0.0.1'
   )
     ? 'http://127.0.0.1:8000'
-    : 'https://stayopx.onrender.com';   // production Render URL
+    : 'https://stayopx.onrender.com';   // production Render URL  
 
   // Check session on load
   (function() {
@@ -206,6 +206,9 @@
     b.innerHTML = '⚠️ <strong>Script missing: ' + _failedScripts.join(', ') + '</strong> — Ensure files are in <code>scripts/</code>.';
   }
 </script>
+
+  <!-- Food Ordering Module Styles -->
+  <link rel="stylesheet" href="./scripts/food_ordering.css">
 </head>
 <body>
 
@@ -302,6 +305,9 @@
     </button>
     <button class="tab-btn" onclick="switchTab(event,'foodMenuTab')">
       🥗 Food Analysis Dashboard
+    </button>
+    <button class="tab-btn" id="foodOrderingBtn" onclick="switchTab(event,'foodOrderingTab')">
+      🍽️ Food Ordering
     </button>
   </div>
 
@@ -737,6 +743,278 @@
       <!-- END NEW FEATURE -->
 
     </div><!-- /foodMenuTab -->
+    <!-- ================================================================
+         TAB 3 — FOOD ORDERING MODULE v2
+         Pre-Order → Kitchen Summary → Dispatch OTP → Delivery Verify
+    ================================================================ -->
+    <div id="foodOrderingTab" class="dashboard-content">
+      <div class="container-fluid px-3 py-3">
+
+        <!-- Header -->
+        <div style="background:linear-gradient(135deg,#1a1a2e 0%,#0f3460 100%);border-radius:16px;
+             padding:22px 28px;color:#fff;margin-bottom:18px;display:flex;align-items:center;
+             justify-content:space-between;flex-wrap:wrap;gap:12px;box-shadow:0 8px 32px rgba(0,0,0,.18);">
+          <div>
+            <h4 style="font-size:19px;font-weight:700;margin-bottom:4px;">🍽️ Food Ordering & Delivery</h4>
+            <p style="color:#a0aec0;font-size:12.5px;margin:0;">
+              Pre-Order → Kitchen Dispatch → OTP Verified Delivery
+            </p>
+          </div>
+          <div class="d-flex gap-2 flex-wrap">
+            <button onclick="foSwitch('place')" style="background:rgba(255,255,255,.15);
+              border:1px solid rgba(255,255,255,.3);color:#fff;padding:7px 16px;
+              border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;">+ New Order</button>
+            <button onclick="foSwitch('kitchen')" style="background:rgba(56,161,105,.2);
+              border:1px solid rgba(56,161,105,.4);color:#9ae6b4;padding:7px 16px;
+              border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;">🍳 Kitchen View</button>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:18px;">
+          <div class="glass-card p-3 text-center" style="border-top:3px solid #667eea;">
+            <div style="font-size:24px;font-weight:700;color:#1a202c;" id="foStatTotal">—</div>
+            <div style="font-size:10.5px;color:#718096;text-transform:uppercase;letter-spacing:.5px;">Total</div>
+          </div>
+          <div class="glass-card p-3 text-center" style="border-top:3px solid #4299e1;">
+            <div style="font-size:24px;font-weight:700;color:#1a202c;" id="foStatOrdered">—</div>
+            <div style="font-size:10.5px;color:#718096;text-transform:uppercase;">Ordered</div>
+          </div>
+          <div class="glass-card p-3 text-center" style="border-top:3px solid #ed8936;">
+            <div style="font-size:24px;font-weight:700;color:#1a202c;" id="foStatDispatched">—</div>
+            <div style="font-size:10.5px;color:#718096;text-transform:uppercase;">Dispatched</div>
+          </div>
+          <div class="glass-card p-3 text-center" style="border-top:3px solid #48bb78;">
+            <div style="font-size:24px;font-weight:700;color:#1a202c;" id="foStatDelivered">—</div>
+            <div style="font-size:10.5px;color:#718096;text-transform:uppercase;">Delivered</div>
+          </div>
+        </div>
+
+        <!-- Sub-tabs -->
+        <div style="display:flex;gap:2px;border-bottom:2px solid #e2e8f0;margin-bottom:18px;flex-wrap:wrap;">
+          <button class="fo-stab active" id="fo-stab-orders"  onclick="foSwitch('orders')">📋 All Orders</button>
+          <button class="fo-stab"        id="fo-stab-place"   onclick="foSwitch('place')">➕ Place Order</button>
+          <button class="fo-stab"        id="fo-stab-kitchen" onclick="foSwitch('kitchen')">🍳 Kitchen Summary</button>
+          <button class="fo-stab"        id="fo-stab-dispatch" onclick="foSwitch('dispatch')">🚚 Dispatch</button>
+          <button class="fo-stab"        id="fo-stab-deliver" onclick="foSwitch('deliver')">✅ Verify Delivery</button>
+        </div>
+
+        <!-- ══ ORDERS TABLE ═══════════════════════════════════════ -->
+        <div id="fo-p-orders" class="fo-panel">
+          <div class="glass-card p-3">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+              <strong style="font-size:13.5px;">📋 All Orders</strong>
+              <div class="d-flex gap-2 flex-wrap">
+                <select id="foFilterStatus" onchange="foLoadOrders()"
+                  style="padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:12.5px;background:#fff;">
+                  <option value="">All Statuses</option>
+                  <option>Ordered</option><option>Dispatched</option>
+                  <option>Delivered</option><option>Cancelled</option>
+                </select>
+                <input type="date" id="foFilterDate" onchange="foLoadOrders()"
+                  style="padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:12.5px;">
+                <button onclick="foLoadOrders()"
+                  style="padding:7px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:12.5px;background:#fff;cursor:pointer;">🔄</button>
+              </div>
+            </div>
+            <div id="foOrdersMsg" style="display:none;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:10px;"></div>
+            <div style="overflow-x:auto;">
+              <table style="width:100%;border-collapse:collapse;font-size:12.5px;">
+                <thead><tr style="background:#f7fafc;border-bottom:2px solid #e2e8f0;">
+                  <th style="padding:9px 12px;text-align:left;font-size:11px;color:#718096;text-transform:uppercase;">#</th>
+                  <th style="padding:9px 12px;text-align:left;font-size:11px;color:#718096;text-transform:uppercase;">Property</th>
+                  <th style="padding:9px 12px;text-align:left;font-size:11px;color:#718096;text-transform:uppercase;">Unit Lead</th>
+                  <th style="padding:9px 12px;text-align:left;font-size:11px;color:#718096;text-transform:uppercase;">Meal</th>
+                  <th style="padding:9px 12px;text-align:left;font-size:11px;color:#718096;text-transform:uppercase;">Date</th>
+                  <th style="padding:9px 12px;text-align:left;font-size:11px;color:#718096;text-transform:uppercase;">Items</th>
+                  <th style="padding:9px 12px;text-align:left;font-size:11px;color:#718096;text-transform:uppercase;">Status</th>
+                  <th style="padding:9px 12px;text-align:left;font-size:11px;color:#718096;text-transform:uppercase;">Actions</th>
+                </tr></thead>
+                <tbody id="foOrdersTbody">
+                  <tr><td colspan="8" style="text-align:center;padding:30px;color:#a0aec0;">Loading...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ PLACE ORDER ════════════════════════════════════════ -->
+        <div id="fo-p-place" class="fo-panel" style="display:none;">
+          <div class="glass-card p-3">
+            <strong style="font-size:13.5px;display:block;margin-bottom:16px;">➕ Place New Order</strong>
+            <div id="foPlaceMsg" style="display:none;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px;"></div>
+            <div class="row g-3 mb-3">
+              <div class="col-md-4">
+                <label style="font-size:11.5px;font-weight:600;color:#4a5568;display:block;margin-bottom:4px;">Property *</label>
+                <select id="foProp" style="width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;background:#fff;">
+                  <option value="">— Select —</option>
+                  <option>Uniliv Property</option>
+                  <option>Huddle Stays Nash B Tower</option>
+                  <option>Huddle Stays Block A</option>
+                  <option>Huddle Stays Block B</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label style="font-size:11.5px;font-weight:600;color:#4a5568;display:block;margin-bottom:4px;">Unit Lead</label>
+                <input id="foUnitLead" type="text" placeholder="Your name"
+                  style="width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;">
+              </div>
+              <div class="col-md-4">
+                <label style="font-size:11.5px;font-weight:600;color:#4a5568;display:block;margin-bottom:4px;">Meal Type *</label>
+                <select id="foMeal" style="width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;background:#fff;">
+                  <option value="">— Select —</option>
+                  <option>Breakfast</option><option>Lunch</option>
+                  <option>Evening Snacks</option><option>Dinner</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label style="font-size:11.5px;font-weight:600;color:#4a5568;display:block;margin-bottom:4px;">Order Date *</label>
+                <input id="foDate" type="date"
+                  style="width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;">
+              </div>
+              <div class="col-md-8">
+                <label style="font-size:11.5px;font-weight:600;color:#4a5568;display:block;margin-bottom:4px;">Notes</label>
+                <input id="foNotes" type="text" placeholder="Any special instructions"
+                  style="width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;">
+              </div>
+            </div>
+            <!-- Items -->
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <strong style="font-size:13px;">Order Items</strong>
+              <button onclick="foAddRow()"
+                style="padding:5px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:12px;background:#fff;cursor:pointer;">+ Add Row</button>
+            </div>
+            <div style="border:1.5px solid #e2e8f0;border-radius:10px;overflow:hidden;margin-bottom:16px;">
+              <table style="width:100%;border-collapse:collapse;font-size:12.5px;">
+                <thead><tr style="background:#f7fafc;">
+                  <th style="padding:8px 12px;text-align:left;font-size:11px;color:#718096;font-weight:600;">Dish / Item</th>
+                  <th style="padding:8px 12px;text-align:left;font-size:11px;color:#718096;font-weight:600;width:130px;">Quantity</th>
+                  <th style="padding:8px 12px;text-align:left;font-size:11px;color:#718096;font-weight:600;width:130px;">Unit</th>
+                  <th style="padding:8px 12px;text-align:center;font-size:11px;color:#718096;font-weight:600;width:60px;">✕</th>
+                </tr></thead>
+                <tbody id="foRowsBody"></tbody>
+              </table>
+            </div>
+            <div class="d-flex gap-2">
+              <button onclick="foSubmit()"
+                style="padding:9px 22px;background:linear-gradient(135deg,#1a1a2e,#0f3460);color:#fff;
+                border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">✅ Place Order</button>
+              <button onclick="foReset()"
+                style="padding:9px 22px;background:#fff;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;cursor:pointer;color:#4a5568;">✖ Clear</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ KITCHEN SUMMARY ════════════════════════════════════ -->
+        <div id="fo-p-kitchen" class="fo-panel" style="display:none;">
+          <div class="glass-card p-3">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+              <strong style="font-size:13.5px;">🍳 Kitchen Summary — Aggregated Orders</strong>
+              <div class="d-flex gap-2 flex-wrap">
+                <input type="date" id="kitDate"
+                  style="padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:12.5px;">
+                <select id="kitMeal"
+                  style="padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:12.5px;background:#fff;">
+                  <option value="">All Meals</option>
+                  <option>Breakfast</option><option>Lunch</option>
+                  <option>Evening Snacks</option><option>Dinner</option>
+                </select>
+                <button onclick="foLoadKitchen()"
+                  style="padding:7px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:12.5px;background:#fff;cursor:pointer;">🔍 Load</button>
+                <button onclick="foExportKitchen()"
+                  style="padding:7px 14px;background:linear-gradient(135deg,#38a169,#276749);color:#fff;
+                  border:none;border-radius:8px;font-size:12.5px;cursor:pointer;">⬇ Export CSV</button>
+              </div>
+            </div>
+            <div id="kitMsg" style="display:none;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:10px;"></div>
+            <div style="overflow-x:auto;">
+              <table style="width:100%;border-collapse:collapse;font-size:12.5px;" id="kitTable">
+                <thead><tr style="background:#f7fafc;border-bottom:2px solid #e2e8f0;">
+                  <th style="padding:9px 12px;text-align:left;font-size:11px;color:#718096;text-transform:uppercase;">Date</th>
+                  <th style="padding:9px 12px;text-align:left;font-size:11px;color:#718096;text-transform:uppercase;">Meal</th>
+                  <th style="padding:9px 12px;text-align:left;font-size:11px;color:#718096;text-transform:uppercase;">Dish / Item</th>
+                  <th style="padding:9px 12px;text-align:right;font-size:11px;color:#718096;text-transform:uppercase;">Total Qty</th>
+                  <th style="padding:9px 12px;text-align:left;font-size:11px;color:#718096;text-transform:uppercase;">Unit</th>
+                </tr></thead>
+                <tbody id="kitTbody">
+                  <tr><td colspan="5" style="text-align:center;padding:30px;color:#a0aec0;">Select a date and load summary</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ DISPATCH ═══════════════════════════════════════════ -->
+        <div id="fo-p-dispatch" class="fo-panel" style="display:none;">
+          <div class="glass-card p-3">
+            <strong style="font-size:13.5px;display:block;margin-bottom:16px;">🚚 Dispatch Order (Kitchen)</strong>
+            <div id="foDispMsg" style="display:none;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px;"></div>
+            <div class="d-flex gap-2 mb-4" style="max-width:560px;">
+              <select id="foDispSel" style="flex:1;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;background:#fff;">
+                <option value="">— Select Order to Dispatch —</option>
+              </select>
+              <input id="foDispBy" type="text" placeholder="Dispatched by"
+                style="flex:1;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;">
+              <button onclick="foDispatch()"
+                style="padding:9px 18px;background:linear-gradient(135deg,#1a1a2e,#0f3460);color:#fff;
+                border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;">🚚 Dispatch & Generate OTP</button>
+            </div>
+            <div id="foDispResult" style="display:none;background:#f0fff4;border:1.5px solid #9ae6b4;
+              border-radius:12px;padding:20px;text-align:center;">
+              <div style="font-size:32px;margin-bottom:8px;">🔐</div>
+              <div style="font-size:13px;color:#276749;margin-bottom:6px;">Dispatch OTP Generated</div>
+              <div style="font-size:36px;font-weight:700;color:#1a1a2e;letter-spacing:8px;" id="foDispOTP">------</div>
+              <div style="font-size:12px;color:#718096;margin-top:8px;">Share this OTP with the Unit Lead at the property</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ VERIFY DELIVERY ════════════════════════════════════ -->
+        <div id="fo-p-deliver" class="fo-panel" style="display:none;">
+          <div class="glass-card p-3">
+            <strong style="font-size:13.5px;display:block;margin-bottom:16px;">✅ Verify Delivery (Unit Lead)</strong>
+            <div id="foDelivMsg" style="display:none;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px;"></div>
+            <div class="d-flex gap-2 mb-4" style="max-width:440px;">
+              <select id="foDelivSel" style="flex:1;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;background:#fff;">
+                <option value="">— Select Dispatched Order —</option>
+              </select>
+              <button onclick="foLoadDeliv()"
+                style="padding:9px 18px;background:linear-gradient(135deg,#1a1a2e,#0f3460);color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;">Load</button>
+            </div>
+            <div id="foDelivDetails" style="display:none;">
+              <div id="foDelivMeta" class="row g-2 mb-3"
+                style="background:#f7fafc;border-radius:10px;padding:10px 14px;margin-bottom:14px;"></div>
+              <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Enter Received Quantities</div>
+              <div id="foDelivItemsWrap" style="border:1.5px solid #e2e8f0;border-radius:10px;overflow:hidden;margin-bottom:14px;">
+                <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;background:#f7fafc;
+                  padding:8px 12px;font-size:11px;font-weight:600;color:#718096;text-transform:uppercase;border-bottom:1.5px solid #e2e8f0;">
+                  <div>Item</div><div>Ordered</div><div>Received</div><div>Unit</div>
+                </div>
+                <div id="foDelivItemsBody"></div>
+              </div>
+              <!-- OTP entry -->
+              <div class="row g-3 align-items-end mb-3" style="max-width:500px;">
+                <div class="col">
+                  <label style="font-size:11.5px;font-weight:600;color:#4a5568;display:block;margin-bottom:4px;">Delivery OTP *</label>
+                  <input type="text" id="foDelivOTP" maxlength="6" placeholder="Enter 6-digit OTP"
+                    oninput="this.value=this.value.replace(/\D/g,'')"
+                    style="width:100%;padding:10px 14px;border:2px solid #e2e8f0;border-radius:10px;
+                    font-size:20px;font-weight:700;text-align:center;letter-spacing:8px;color:#1a1a2e;">
+                </div>
+                <div class="col-auto">
+                  <button onclick="foConfirmDeliv()"
+                    style="padding:10px 22px;background:linear-gradient(135deg,#38a169,#276749);color:#fff;
+                    border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">✅ Confirm Delivery</button>
+                </div>
+              </div>
+              <div id="foDelivOTPErr" style="color:#e53e3e;font-size:12px;min-height:16px;"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /foodOrderingTab -->
+
   </div><!-- /content-area -->
 </div><!-- /main-wrapper -->
 
@@ -833,7 +1111,7 @@ function _applyRole(user) {
   var roleEl = document.getElementById('nav-role-badge');
   if (nameEl) nameEl.textContent = user.username;
   if (roleEl) {
-    var labels = { property:'Property', food:'Food', admin:'Admin' };
+    var labels = { property:'Property', food:'Food', ordering:'Ordering', admin:'Admin' };
     roleEl.textContent = labels[role] || role;
   }
 
@@ -901,5 +1179,8 @@ function togglePassword() {
 }
 </script>
 
+
+<!-- Food Ordering Module Script -->
+<script src="./scripts/food_ordering.js"></script>
 </body>
 </html>

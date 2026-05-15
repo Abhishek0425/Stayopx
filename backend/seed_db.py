@@ -349,10 +349,13 @@ print("\n── Creating default users ─────────────�
 
 DEFAULT_USERS = [
     # (username, password, email, role, brand, is_superuser)
-    ('admin',          'admin123',  'admin@uniliv.com',    'admin',    'uniliv', True),
-    ('property_admin', 'prop123',   'property@uniliv.com', 'property', 'uniliv', False),
-    ('food_uniliv',    'food123',   'food@uniliv.com',     'food',     'uniliv', False),
-    ('food_huddle',    'huddle123', 'food@huddle.com',     'food',     'huddle', False),
+    ('admin',           'admin123',    'admin@uniliv.com',    'admin',    'uniliv', True),
+    ('property_admin',  'prop123',     'property@uniliv.com', 'property', 'uniliv', False),
+    ('food_uniliv',     'food123',     'food@uniliv.com',     'food',     'uniliv', False),
+    ('food_huddle',     'huddle123',   'food@huddle.com',     'food',     'huddle', False),
+    # NEW — Food Ordering access only
+    ('ordering_uniliv', 'order123',    'order@uniliv.com',    'ordering', 'uniliv', False),
+    ('ordering_huddle', 'orderh123',   'order@huddle.com',    'ordering', 'huddle', False),
 ]
 
 for username, password, email, role, brand, is_super in DEFAULT_USERS:
@@ -370,5 +373,7 @@ print("\n── Login credentials ───────────────�
 print("  admin          / admin123   → Both dashboards")
 print("  property_admin / prop123    → Property dashboard only")
 print("  food_uniliv    / food123    → Food dashboard (UNILIV)")
-print("  food_huddle    / huddle123  → Food dashboard (HUDDLE)")
+print("  food_huddle       / huddle123   → Food dashboard (HUDDLE)")
+print("  ordering_uniliv   / order123    → Food Ordering only (UNILIV)")
+print("  ordering_huddle   / orderh123   → Food Ordering only (HUDDLE)")
 print("\n✅ Done!  Run: python manage.py runserver")
